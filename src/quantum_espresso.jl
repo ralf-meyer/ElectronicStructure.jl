@@ -1,6 +1,5 @@
 using ASEconvert
 using PythonCall
-using QuantumEspresso_jll
 using MPI
 using LinearAlgebra
 using Unitful
@@ -78,14 +77,11 @@ end
 
 function calculate(::QeCalculator, state::QeState)
     n_mpi_procs = state.params.n_mpi_procs
-    MPI.mpiexec() do mpirun
-        QuantumEspresso_jll.pwscf() do pwscf
-            qe_command = "$mpirun -np $n_mpi_procs $pwscf -in PREFIX.pwi > PREFIX.pwo"
-            state.ase_atoms.calc.command = qe_command
-            withenv("OMP_NUM_THREADS" => state.params.n_threads) do
-                state.ase_atoms.calc.get_potential_energy()
-            end
-        end
+    qe_path = ENV["ESPRESSO_BIN"]
+    qe_command = "mpirun -np $n_mpi_procs $qe_path/pw.x -in PREFIX.pwi > PREFIX.pwo"
+    state.ase_atoms.calc.command = qe_command
+    withenv("OMP_NUM_THREADS" => state.params.n_threads) do
+        state.ase_atoms.get_potential_energy()
     end
 end
 
