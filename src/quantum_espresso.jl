@@ -2,6 +2,7 @@ using ASEconvert
 using PythonCall
 using QuantumEspresso_jll
 using MPI
+using LinearAlgebra
 using Unitful
 using UnitfulAtomic
 
@@ -52,20 +53,20 @@ function QeState(params::QeParameters)
     ase_atoms = convert_ase(params.system)
     ase_atoms.calc = pyimport("ase.calculators.espresso").Espresso(;
         label="espresso",
-        params.input_dft,
-        params.pseudopotentials,
-        params.kpts,
-        params.ecutwfc,
-        params.tstress,
-        params.tprnfor,
-        params.mixing_mode,
-        params.mixing_beta,
-        params.conv_thr,
-        params.occupations,
-        params.smearing,
-        params.degauss,
-        params.electron_maxstep,
-        params.mixing_ndim,
+        ecutwfc=params.ecutwfc,
+        conv_thr=params.conv_thr,
+        tstress=params.tstress,
+        tprnfor=params.tprnfor,
+        smearing=params.smearing,
+        mixing_mode=params.mixing_mode,
+        mixing_beta=params.mixing_beta,
+        mixing_ndim=params.mixing_ndim,
+        kpts=params.kpts,
+        occupations=params.occupations,
+        degauss=params.degauss,
+        input_dft=params.input_dft,
+        electron_maxstep=params.electron_maxstep,
+        pseudopotentials=params.pseudopotentials,
         params.extra_parameter...
     )
     QeState(params, ase_atoms)
@@ -89,5 +90,5 @@ function calculate(::QeCalculator, state::QeState)
 end
 
 function energy(state::QeState)
-    austrip(state.ase_calculator.get_potential_energy() * u"eV")
+    austrip(pyconvert(AbstractFloat, state.ase_atoms.get_potential_energy())u"eV")
 end
